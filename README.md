@@ -1,31 +1,14 @@
-## Troubleshooting
-
-### Problem: Podman build fails with newuidmap/user namespace error
-
-**Symptom:**
-```
-ERRO[0000] running `/usr/bin/newuidmap ...`: newuidmap: write to uid_map failed: Invalid argument
-invalid internal status, try resetting the pause process with "podman system migrate": cannot set up namespace using "/usr/bin/newuidmap": exit status 1
-```
-
-**Solution:**
-1. Add UID/GID mapping for your user:
-	```bash
-	echo "$(whoami):100000:65536" | sudo tee -a /etc/subuid /etc/subgid
-	```
-2. Run Podman system migration:
-	```bash
-	podman system migrate
-	```
-3. Log out and log in again (or restart your session).
-4. Retry the build and deployment commands from Usage Instructions.
-
-**Note:** If the problem persists, ensure user namespaces are enabled in your Linux kernel and check `/etc/login.defs` for correct settings.
-
-
 # rust-podman-atomic-deploy
 
 Automated deployment of a static web page in a container using Rust and Podman.
+
+## ✨ Features
+- **🚀 Fast**: Lightweight Rust-based web server
+- **🐳 Containerized**: Ready-to-deploy Podman containers 
+- **🔧 Automated**: One-command deployment script
+- **🛡️ Secure**: Rootless container support
+- **📁 Simple**: Easy customization of static content
+- **🌐 Production-ready**: Reverse proxy configuration examples
 
 ---
 
@@ -42,89 +25,193 @@ flowchart TD
 ---
 
 ## 2. Requirements
-- Podman (rootless or root)
-- Linux (recommended)
+- **Podman** (rootless or root mode)
+- **Linux** (recommended, tested on Ubuntu/Fedora)
+- **Rust** and **Cargo** (for building from source or using deployment script)
+
+### Optional
+- **Git** (for cloning the repository)
+- **Nginx** or other reverse proxy (for production deployment)
 
 ---
 
 ## 3. Quick Start
-### Clone & Run
+
+### Option 1: Manual Build & Run
 ```bash
 git clone https://github.com/ITSsafer-DevOps/rust-podman-atomic-deploy.git
 cd rust-podman-atomic-deploy
 podman build -f static_web_server/Podmanfile -t static_web_server:latest ./static_web_server
 podman run --rm -d -p 8080:8080 static_web_server:latest
 ```
-Open [http://localhost:8080](http://localhost:8080) in your browser.
+
+### Option 2: Automated Deployment Script
+```bash
+git clone https://github.com/ITSsafer-DevOps/rust-podman-atomic-deploy.git
+cd rust-podman-atomic-deploy/deployment_script
+cargo run
+```
+This will automatically build the Rust binary, create the container image, and start the container on port 80.
+
+Open [http://localhost:8080](http://localhost:8080) (manual) or [http://localhost](http://localhost) (automated script) in your browser.
 
 ---
 
 ## 4. Customization
+
 ### How to deploy your own site
-1. Replace `static_web_server/index.html` with your own HTML file.
-2. (Optional) Edit Rust code in `static_web_server/src/main.rs` if you want to serve more files or change server logic.
-3. Optionally add more assets (CSS, images) to `static_web_server/` and update code/server as needed.
-4. Build and run the container as in Quick Start.
+1. **Replace the HTML file**: Replace `static_web_server/index.html` with your own HTML file.
+2. **Add assets** (optional): Add CSS, images, or other assets to `static_web_server/` directory.
+3. **Modify server logic** (optional): Edit Rust code in `static_web_server/src/main.rs` if you want to serve multiple files or change server behavior.
+4. **Rebuild and run**: Build and run the container using Quick Start instructions.
 
 ### Change port
-- Edit port in `static_web_server/src/main.rs` and in `Podmanfile`.
-- Run: `podman run --rm -d -p <your_port>:8080 static_web_server:latest`
+- **Server code**: Edit port in `static_web_server/src/main.rs` (line 20)
+- **Container configuration**: Update port mapping in `Podmanfile` if needed
+- **Run with custom port**: `podman run --rm -d -p <your_port>:8080 static_web_server:latest`
 
----
-
-## 5. Troubleshooting
-- **Podman UID/GID error:**
-	```bash
-	echo "$(whoami):100000:65536" | sudo tee -a /etc/subuid /etc/subgid
-	podman system migrate
-	```
-- **Port is busy:**
-	```bash
-	netstat -tuln | grep 8080
-	# Kill the process or use another port
-	```
-- **Container won't start:**
-	- Check logs: `podman logs <container_id>`
-	- Ensure Podman is running and you have permissions.
-
----
-
-## 6. Production deployment
-
-Recommendations for production:
-- **Security:**
-	- Use a reverse proxy (e.g. nginx, traefik) in front of the container for HTTPS, domain, rate limiting.
-	- Set up a firewall, allow only necessary ports.
-- **Scaling:**
-	- For multiple pages/assets, extend Rust code to serve more files.
-	- Use orchestration (e.g. Podman Compose, Kubernetes) for multiple containers.
-- **Monitoring & logging:**
-	- Add logging to Rust code (e.g. with `tracing` crate).
-	- Add healthcheck to Podmanfile (e.g. with `HEALTHCHECK`).
-- **Configuration:**
-	- Edit ports, paths, COPY in Podmanfile as needed for your infrastructure.
-	- Store assets in a separate folder, update server to serve them.
-
-Example reverse proxy (nginx):
-```nginx
-server {
-		listen 80;
-		server_name your-domain.com;
-		location / {
-				proxy_pass http://localhost:8080;
-				proxy_set_header Host $host;
-				proxy_set_header X-Real-IP $remote_addr;
-		}
-}
+### Example: Serving multiple files
+To serve CSS and other assets, modify `static_web_server/src/main.rs`:
+```rust
+// Add path routing to serve different file types
+// See the existing code for basic structure
 ```
 
 ---
 
-## 7. What to edit for your own deployment
-- `static_web_server/index.html` – your web page
-- `static_web_server/src/main.rs` – server logic (optional)
-- `static_web_server/Podmanfile` – container config (ports, files)
-- README.md – update instructions for your team/users
+## 5. Troubleshooting
+
+### Common Issues
+
+#### Podman UID/GID error:
+**Symptom:**
+```
+ERRO[0000] running `/usr/bin/newuidmap ...`: newuidmap: write to uid_map failed: Invalid argument
+invalid internal status, try resetting the pause process with "podman system migrate": cannot set up namespace using "/usr/bin/newuidmap": exit status 1
+```
+
+**Solution:**
+```bash
+echo "$(whoami):100000:65536" | sudo tee -a /etc/subuid /etc/subgid
+podman system migrate
+```
+Then log out and log in again (or restart your session).
+
+**Note:** Alternatively, you can use the provided fix script:
+```bash
+bash podman_userns_fix.sh
+```
+
+#### Port is busy:
+```bash
+netstat -tuln | grep 8080
+# Kill the process or use another port
+```
+
+#### Container won't start:
+- Check logs: `podman logs <container_id>`
+- Ensure Podman is running and you have permissions.
+- Verify the image was built successfully: `podman images`
+
+---
+
+## 6. Production Deployment
+
+### Security Recommendations
+- **Use HTTPS**: Set up a reverse proxy (nginx, traefik, Apache) for SSL/TLS termination
+- **Firewall**: Configure firewall to allow only necessary ports (80, 443)
+- **User namespaces**: Run containers in rootless mode for better security
+- **Regular updates**: Keep Podman and host system updated
+
+### Scaling & Performance
+- **Load balancing**: Use multiple container instances behind a load balancer
+- **Resource limits**: Set memory and CPU limits in production
+- **Health checks**: Add health check endpoints to your Rust application
+- **Logging**: Implement structured logging with the `tracing` crate
+
+### Container Management
+- **Orchestration**: Consider Podman Compose for multi-container setups
+- **Auto-restart**: Configure containers to restart automatically on failure
+- **Backup**: Regular backup of container data and configurations
+
+### Example Reverse Proxy Configuration
+
+#### Nginx
+```nginx
+server {
+    listen 80;
+    server_name your-domain.com;
+    
+    # Redirect HTTP to HTTPS
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name your-domain.com;
+    
+    ssl_certificate /path/to/your/cert.pem;
+    ssl_certificate_key /path/to/your/key.pem;
+    
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+#### Systemd Service (Auto-start)
+Create `/etc/systemd/system/static-web-server.service`:
+```ini
+[Unit]
+Description=Static Web Server Container
+After=network.target
+
+[Service]
+Type=forking
+RemainAfterExit=yes
+ExecStart=/usr/bin/podman run -d --name static-web-server -p 8080:8080 static_web_server:latest
+ExecStop=/usr/bin/podman stop static-web-server
+ExecStopPost=/usr/bin/podman rm static-web-server
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable and start:
+```bash
+sudo systemctl enable static-web-server.service
+sudo systemctl start static-web-server.service
+```
+
+---
+
+## 7. Development & Customization Guide
+
+### Key Files to Modify
+- **`static_web_server/index.html`** – Your web page content
+- **`static_web_server/src/main.rs`** – Server logic and routing
+- **`static_web_server/Podmanfile`** – Container configuration
+- **`deployment_script/src/main.rs`** – Automated deployment logic
+- **README.md** – Update instructions for your team/users
+
+### Development Workflow
+1. Make changes to your HTML/CSS files
+2. Test locally: `cd static_web_server && cargo run`
+3. Build container: `podman build -f Podmanfile -t static_web_server:latest .`
+4. Test container: `podman run --rm -p 8080:8080 static_web_server:latest`
+5. Deploy to production
+
+### Contributing
+Contributions are welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
 
 ---
 
