@@ -1,0 +1,11 @@
+[package]
+name = "static_web_server"
+version = "0.1.0"
+edition = "2021"
+authors = ["ITSsafer"]
+description = "A simple static web server for local demonstration."
+license = "MIT"
+
+[dependencies]
+hyper = { version = "0.14", features = ["server", "tcp", "http1", "http2"] }
+tokio = { version = "1", features = ["full"] }

@@ -1,0 +1,6 @@
+FROM docker.io/library/rust:latest
+WORKDIR /app
+COPY ./target/release/static_web_server /app/static_web_server
+COPY ./index.html /app/index.html
+EXPOSE 8080
+CMD ["/app/static_web_server"]

@@ -1,0 +1,15 @@
+FROM docker.io/library/rust:latest as builder
+WORKDIR /deploy/deployment_script
+COPY ./deployment_script/Cargo.toml ./
+COPY ./deployment_script/Cargo.lock ./
+COPY ./deployment_script/src ./src
+RUN ls -la
+RUN rm -f Cargo.lock && cargo build --release
+
+FROM docker.io/library/rust:latest
+WORKDIR /deploy
+# Install podman in the container
+RUN apt-get update && apt-get install -y podman
+COPY --from=builder /deploy/deployment_script/target/release/deployment_script /deploy/deployment_script
+COPY static_web_server/ /deploy/static_web_server/
+CMD ["/deploy/deployment_script"]

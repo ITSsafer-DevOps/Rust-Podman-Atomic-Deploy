@@ -1,0 +1,10 @@
+[package]
+name = "deployment_script"
+version = "0.1.0"
+edition = "2021"
+authors = ["ITSsafer"]
+description = "Deployment script for static web server using Podman."
+license = "MIT"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
